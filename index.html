@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Speed Clapper Challenge</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style id="app-style">
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, rgba(245,247,250,0.5) 0%, rgba(195,207,226,0.5) 100%),
+        url('https://media.gettyimages.com/id/1140886675/video/traditional-circus-background-pattern.jpg?s=640x640&k=20&c=HODThs7Zuvh7IsiWF7FIyA76VPfmBnwLNtZaaM2seDw=') center center/cover no-repeat fixed;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .clap-hand {
+      font-size: 5rem;
+      color: #fbbc05;
+      margin-bottom: 1rem;
+      transition: transform 0.1s cubic-bezier(.4,2,.6,1);
+      filter: drop-shadow(0 4px 16px #fbbc0580);
+      user-select: none;
+      pointer-events: none;
+      animation: hand-idle 1.5s infinite alternate;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .clap-hand.clap {
+      animation: hand-clap 0.2s cubic-bezier(.4,2,.6,1);
+    }
+    @keyframes hand-clap {
+      0% { transform: scale(1) rotate(-10deg);}
+      50% { transform: scale(1.25) rotate(10deg);}
+      100% { transform: scale(1) rotate(0);}
+    }
+    @keyframes hand-idle {
+      0% { transform: scale(1);}
+      100% { transform: scale(1.05);}
+    }
+    .progress-bar-bg {
+      width: 320px;
+      max-width: 80vw;
+      height: 18px;
+      background: #e0e7ef;
+      border-radius: 10px;
+      margin: 1.5rem auto 0 auto;
+      overflow: hidden;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4285f4 0%, #fbbc05 100%);
+      border-radius: 10px 0 0 10px;
+      transition: width 0.2s cubic-bezier(.4,2,.6,1);
+      box-shadow: 0 0 12px #fbbc0550;
+    }
+    .click-counter.glow {
+      text-shadow: 0 0 24px #fbbc05, 0 0 48px #4285f4;
+      color: #222;
+      background: linear-gradient(90deg, #fbbc05 30%, #4285f4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: glow-pop 0.3s;
+    }
+    @keyframes glow-pop {
+      0% { text-shadow: 0 0 0 #fbbc05; }
+      100% { text-shadow: 0 0 24px #fbbc05, 0 0 48px #4285f4; }
+    }
+    .restart-btn {
+      display: none;
+      margin: 2rem auto 0 auto;
+      padding: 0.7rem 2.2rem;
+      font-size: 1.2rem;
+      background: linear-gradient(90deg, #4285f4 0%, #fbbc05 100%);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      box-shadow: 0 4px 16px #4285f440;
+      cursor: pointer;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .restart-btn:active {
+      transform: scale(0.97);
+      background: linear-gradient(90deg, #fbbc05 0%, #4285f4 100%);
+    }
+    
+    .instructions {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #555;
+      font-size: 1.2rem;
+      opacity: 0.7;
+    }
+    
+    .click-counter {
+      font-size: 8rem;
+      font-weight: bold;
+      color: rgba(0, 0, 0, 0.15);
+      transition: transform 0.1s ease;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      font-size: 3rem;
+      color: #4285f4;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      color: #555;
+    }
+    
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      animation: confetti-fall 3s ease-in-out forwards;
+      z-index: 100;
+    }
+    
+    @keyframes confetti-fall {
+      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+    
+    .congratulations {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      padding: 2rem 4rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .congratulations h1 {
+      color: #4285f4;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    .congratulations p {
+      font-size: 1.2rem;
+      color: #555;
+    }
+    
+    .show-congrats {
+      opacity: 1;
+      animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    @keyframes pop-in {
+      0% { transform: translate(-50%, -50%) scale(0.5); }
+      70% { transform: translate(-50%, -50%) scale(1.1); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+    
+    .top-clap-img {
+      animation: bounceY 2s infinite cubic-bezier(.4,0,.2,1);
+      width: 120px;
+      display: block;
+      margin: 30px auto 10px auto;
+      filter: drop-shadow(0 2px 8px #fbbc0580);
+    }
+    @keyframes bounceY {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-18px) scale(1.08); }
+    }
+    .motivational-fade {
+      opacity: 0;
+      animation: fadeInMotivation 1.2s 0.5s forwards;
+    }
+    @keyframes fadeInMotivation {
+      to { opacity: 1; }
+    }
+    .trophy-pulse {
+      animation: pulseTrophy 1.2s infinite;
+      width: 80px;
+      margin-bottom: 1rem;
+    }
+    @keyframes pulseTrophy {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 #fbbc05); }
+      50% { transform: scale(1.15) rotate(-5deg); filter: drop-shadow(0 0 16px #fbbc05); }
+    }
+    .confetti-float {
+      animation: confettiFloat 3s linear infinite;
+      width: 60px;
+      display: block;
+      margin: 30px auto 0 auto;
+      opacity: 0.8;
+    }
+    @keyframes confettiFloat {
+      0% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(10deg); }
+      100% { transform: translateY(0) rotate(-10deg); }
+    }
+    @media (max-width: 768px) {
+      .instructions {
+        font-size: 1rem;
+        padding: 0 20px;
+      }
+      
+      .click-counter {
+        font-size: 6rem;
+      }
+      
+      .congratulations {
+        padding: 1.5rem 2rem;
+        width: 80%;
+      }
+      
+      .congratulations h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-overlay" id="loading-overlay">
+    <i class="loading-spinner fas fa-spinner"></i>
+    <p class="loading-text">Loading sound effects...</p>
+  </div>
+  <img src="https://img.freepik.com/free-vector/flat-hands-applauding-background_23-2148156518.jpg?semt=ais_hybrid&w=740&q=80" alt="Clapping Hands" class="top-clap-img">
+  <div class="instructions">
+    <span style="font-size:1.3rem;font-weight:bold;color:#4285f4;">Welcome to the Speed Clapper Challenge!</span><br>
+    Click anywhere on the screen 10 times within 2 seconds!
+  </div>
+  <div style="margin-bottom:1.5rem;text-align:center;color:#666;font-size:1.1rem;" class="motivational-fade">
+    "Push your limits. Clap faster, win bigger!"
+  </div>
+  <div class="clap-hand" id="clapHand">
+    <i class="fas fa-hand-paper"></i>
+  </div>
+  <div class="click-counter" id="click-counter">0</div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progressBar"></div>
+  </div>
+  <button class="restart-btn" id="restartBtn">
+    <i class="fas fa-redo"></i> Restart
+  </button>
+  <div class="congratulations" id="congratsModal">
+    <h1>Congratulations!</h1>
+    <img src="https://t4.ftcdn.net/jpg/05/93/91/27/360_F_593912714_6pEIEP3YlFQkbwknHEYxQzbne5ZN6BlE.jpg" alt="Trophy" class="trophy-pulse">
+    <p>You clicked 10 times within 2 seconds!</p>
+  </div>
+  <img src="https://cms-artifacts.artlist.io/content/motion_array/1924221/Celebration_Background_With_Confetti_high_resolution_preview_1924221.jpg?Expires=2037561111516&Key-Pair-Id=K2ZDLYDZI2R1DF&Signature=a8zvOEy2KjMXs~I-8LKkUhU4NuyrHuaVQrqF27MTcW0cYsxiuQjCa0AUk1qMyS7j19Dno2p5Ifspu0rbhjMpyL7ZQr32FnfF4EPVEdUlBVbO80ZP2fBw7TfPq-Os572nUkBmzon4F4HBE5wyBl~ffV9Q~C79Gke7vk6G8Ueo~xdqaSyrZIPFfPO1GCDI7PIZhvbMpfMef2wphg49El63VAryMM1eFXtjJ1~FMZxKRkHUKXbIeRIJe-HN2G8QXfkpb0hcZaCX4PMk2oGQk3SeDzltpG4EGgAqpH~VjZQ6HuRZyReWiX363sotZ-XsaZMSJ3L2UF~hsdBnIhzl4oueIw__" alt="Confetti" class="confetti-float">
+  <div style="margin-top:2.5rem;text-align:center;color:#888;font-size:1rem;" class="motivational-fade">
+    "Every clap brings you closer to victory!"
+  </div>
+  <audio id="clapping-sound" preload="auto">
+    <source src="https://www.soundjay.com/human/sounds/applause-01.mp3" type="audio/mpeg">
+    <!-- Fallback for older browsers -->
+    Your browser does not support the audio element.
+  </audio>
+  <script id="app-script">
+    // Audio element
+    const clappingSound = document.getElementById('clapping-sound');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const clickCounter = document.getElementById('click-counter');
+    const congratsModal = document.getElementById('congratsModal');
+    const clapHand = document.getElementById('clapHand');
+    const progressBar = document.getElementById('progressBar');
+    const restartBtn = document.getElementById('restartBtn');
+    // Array to store click timestamps
+    let clicks = [];
+    let clickCount = 0;
+    // Function to check if 10 clicks happened within 2 seconds
+    function checkClicks() {
+      const now = Date.now();
+      // Remove clicks that are older than 2 seconds
+      clicks = clicks.filter(timestamp => now - timestamp < 2000);
+      // Add current click
+      clicks.push(now);
+      // Update counter
+      clickCount = clicks.length;
+      clickCounter.textContent = clickCount;
+      // Animate hand
+      clapHand.classList.add('clap');
+      setTimeout(() => clapHand.classList.remove('clap'), 180);
+      // Animate counter
+      clickCounter.style.transform = 'scale(1.2)';
+      setTimeout(() => {
+        clickCounter.style.transform = 'scale(1)';
+      }, 100);
+      // Progress bar update
+      progressBar.style.width = Math.min(clickCount * 10, 100) + '%';
+      // Glow effect when close to goal
+      if (clickCount >= 7 && clickCount < 10) {
+        clickCounter.classList.add('glow');
+      } else {
+        clickCounter.classList.remove('glow');
+      }
+      // Check if we have 10 clicks within the 2-second window
+      if (clicks.length >= 10) {
+        celebrate();
+        // Reset clicks array after celebration
+        clicks = [];
+        clickCount = 0;
+        setTimeout(() => {
+          clickCounter.textContent = clickCount;
+          progressBar.style.width = '0%';
+          clickCounter.classList.remove('glow');
+        }, 1000);
+      }
+    }
+    // Function to create and show confetti
+    function createConfetti() {
+      for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        // Random confetti properties
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = confetti.style.width;
+        confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+        document.body.appendChild(confetti);
+        // Remove confetti after animation
+        setTimeout(() => {
+          confetti.remove();
+        }, 3000);
+      }
+    }
+    // Function to celebrate - play sound and show congratulations
+    function celebrate() {
+      // Play clapping sound
+      clappingSound.currentTime = 0;
+      clappingSound.play();
+      // Show confetti
+      createConfetti();
+      // Show congratulations modal
+      congratsModal.classList.add('show-congrats');
+      restartBtn.style.display = 'block';
+      // Hide congratulations after a delay
+      setTimeout(() => {
+        congratsModal.classList.remove('show-congrats');
+      }, 3000);
+    }
+    // Restart button handler
+    restartBtn.addEventListener('click', () => {
+      clicks = [];
+      clickCount = 0;
+      clickCounter.textContent = '0';
+      progressBar.style.width = '0%';
+      clickCounter.classList.remove('glow');
+      restartBtn.style.display = 'none';
+    });
+    // Audio loaded event
+    clappingSound.addEventListener('canplaythrough', () => {
+      // Hide loading overlay when audio is ready
+      loadingOverlay.style.display = 'none';
+    });
+    // Error handling for audio loading
+    clappingSound.addEventListener('error', () => {
+      loadingOverlay.innerHTML = `
+        <p style="color: #e74c3c;">
+          <i class="fas fa-exclamation-triangle"></i> 
+          Failed to load audio.
+          <br>The app will still work but without sound.
+        </p>
+      `;
+      // Hide loading overlay after showing error
+      setTimeout(() => {
+        loadingOverlay.style.display = 'none';
+      }, 2000);
+    });
+    // Add click event listener to the entire document
+    document.addEventListener('click', checkClicks);
+    // Start loading the audio - this will trigger the 'canplaythrough' event
+    clappingSound.load();
+  </script>
+</body>
+</html>
